@@ -1,45 +1,46 @@
 #!/bin/bash
 
-# Usage: ./summarize.sh <folder>
-TARGET="$1"
+TARGET_DIR="$1"
+EXCLUDES="(myenv|.venv|env|__pycache__|\.git|node_modules)"
 
-if [ -z "$TARGET" ]; then
-  echo "❌ Please specify a folder to scan. Example: ./summarize.sh ukubona-llc.github.io"
+if [ -z "$TARGET_DIR" ]; then
+  echo "❗ Usage: $0 <directory>"
   exit 1
 fi
 
-if [ ! -d "$TARGET" ]; then
-  echo "❌ '$TARGET' is not a valid directory."
-  exit 1
-fi
+echo "📁 Scanning directory: $TARGET_DIR"
+echo
 
-echo "📁 Scanning directory: $TARGET"
-echo ""
+# Total files and folders (excluding env-like stuff)
+total_files=$(find "$TARGET_DIR" -type f -not -path "*/$EXCLUDES/*" | wc -l)
+total_dirs=$(find "$TARGET_DIR" -type d -not -path "*/$EXCLUDES/*" | wc -l)
 
-# Count by type
-html_count=$(find "$TARGET" -type f -iname "*.html" | wc -l)
-md_count=$(find "$TARGET" -type f -iname "*.md" | wc -l)
-py_count=$(find "$TARGET" -type f -iname "*.py" | wc -l)
-js_count=$(find "$TARGET" -type f -iname "*.js" | wc -l)
-css_count=$(find "$TARGET" -type f -iname "*.css" | wc -l)
-img_count=$(find "$TARGET" -type f \( -iname "*.png" -o -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.gif" -o -iname "*.svg" \) | wc -l)
-dir_count=$(find "$TARGET" -type d | wc -l)
-file_count=$(find "$TARGET" -type f | wc -l)
+echo "🗂️  Total files:    $(printf '%6d' "$total_files")"
+echo "📂 Total folders:  $(printf '%6d' "$total_dirs")"
+echo
 
-echo "🗂️  Total files: $file_count"
-echo "📂 Total folders: $dir_count"
-echo ""
+# File breakdown
 echo "🧾 File breakdown:"
-echo "  📄 HTML files      : $html_count"
-echo "  📓 Markdown files  : $md_count"
-echo "  🐍 Python files     : $py_count"
-echo "  📜 JavaScript files : $js_count"
-echo "  🎨 CSS files        : $css_count"
-echo "  🖼️  Image files      : $img_count"
-echo ""
-echo "✅ Done scanning."
+printf "  📄 HTML files      : %6d\n" $(find "$TARGET_DIR" -type f -name "*.html" -not -path "*/$EXCLUDES/*" | wc -l)
+printf "  📓 Markdown files  : %6d\n" $(find "$TARGET_DIR" -type f -name "*.md" -not -path "*/$EXCLUDES/*" | wc -l)
+printf "  🐍 Python files     : %6d\n" $(find "$TARGET_DIR" -type f -name "*.py" -not -path "*/$EXCLUDES/*" | wc -l)
+printf "  📜 JavaScript files : %6d\n" $(find "$TARGET_DIR" -type f -name "*.js" -not -path "*/$EXCLUDES/*" | wc -l)
+printf "  🎨 CSS files        : %6d\n" $(find "$TARGET_DIR" -type f -name "*.css" -not -path "*/$EXCLUDES/*" | wc -l)
+printf "  🖼️  Image files      : %6d\n" $(find "$TARGET_DIR" -type f \( -iname "*.png" -o -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.gif" \) -not -path "*/$EXCLUDES/*" | wc -l)
 
-# Optional: visualize folder tree up to 3 levels
-echo ""
+echo
+echo "✅ Done scanning."
+echo
+
+# Warn if virtual envs exist
+venvs_found=$(find "$TARGET_DIR" -type d -regextype posix-extended -regex ".*/($EXCLUDES)$" 2>/dev/null)
+if [[ ! -z "$venvs_found" ]]; then
+  echo "⚠️  Virtual environments or large ignored folders found:"
+  echo "$venvs_found" | sed 's/^/   🚫 /'
+  echo
+fi
+
+# Folder structure (3 levels max)
 echo "📚 Folder structure (first 3 levels):"
-find "$TARGET" -type d | sed 's|[^/]*/|  |g' | sed 's|  |│   |g' | sed 's|│   \(.*\)|├── \1|'
+echo "$TARGET_DIR"
+find "$TARGET_DIR" -mindepth 1 -maxdepth 3 -type d -not -path "*/$EXCLUDES/*" | sed 's|[^/]*/|│   |g' | sed 's|│   \([^│]*\)$|├── \1|'
