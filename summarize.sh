@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# bash <(curl -s https://raw.githubusercontent.com/abikesa/directory-tree/refs/heads/main/summarize.sh) ./
 # === Config === ./summarize.sh ukubona-llc.github.io --raw
 TARGET_DIR=""
 DEPTH=3
